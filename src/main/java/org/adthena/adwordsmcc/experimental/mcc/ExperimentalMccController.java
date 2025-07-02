@@ -1,6 +1,5 @@
 package org.adthena.adwordsmcc.experimental.mcc;
 
-import org.adthena.adwordsmcc.experimental.mcc.model.MccTraversalResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,29 +27,35 @@ public class ExperimentalMccController {
     private ExperimentalMccService experimentalMccService;
 
     /**
-     * Gets the complete MCC hierarchy by traversing through all accessible MCC accounts.
-     * This endpoint can discover accounts that the user doesn't have direct access to
-     * by using the login-customer-id header to authenticate through parent MCC accounts.
+     * Gets the complete MCC hierarchy using optimized single queries per MCC.
+     * This endpoint reduces API quota usage by eliminating recursive calls.
+     * Returns raw JSON data for initial implementation to avoid serialization complexity.
      *
-     * @return MccTraversalResult containing the complete hierarchy and traversal metadata
+     * @return Raw JSON string containing the complete hierarchy data
      */
     @GetMapping("/complete-hierarchy")
-    public ResponseEntity<MccTraversalResult> getCompleteMccHierarchy() {
-        logger.info("Received request for complete MCC hierarchy traversal");
-        
+    public ResponseEntity<String> getCompleteMccHierarchy() {
+        logger.info("Received request for optimized MCC hierarchy retrieval");
+
         try {
-            MccTraversalResult result = experimentalMccService.getCompleteMccHierarchy();
-            
-            logger.info("Successfully completed MCC hierarchy traversal: {}", result.getTraversalSummary());
-            return ResponseEntity.ok(result);
-            
+            String jsonResult = experimentalMccService.getCompleteMccHierarchy();
+
+            logger.info("Successfully completed optimized MCC hierarchy retrieval");
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/json")
+                    .body(jsonResult);
+
         } catch (IOException e) {
-            logger.error("Failed to traverse MCC hierarchy", e);
-            return ResponseEntity.status(500).build();
-            
+            logger.error("Failed to retrieve MCC hierarchy", e);
+            return ResponseEntity.status(500)
+                    .header("Content-Type", "application/json")
+                    .body("{\"error\": \"Failed to retrieve MCC hierarchy: " + e.getMessage().replace("\"", "\\\"") + "\"}");
+
         } catch (Exception e) {
-            logger.error("Unexpected error during MCC hierarchy traversal", e);
-            return ResponseEntity.status(500).build();
+            logger.error("Unexpected error during MCC hierarchy retrieval", e);
+            return ResponseEntity.status(500)
+                    .header("Content-Type", "application/json")
+                    .body("{\"error\": \"Unexpected error: " + e.getMessage().replace("\"", "\\\"") + "\"}");
         }
     }
 
